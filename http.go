@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-// makeRequestN supports DA's new API
 func (c *Client) makeRequest(method string, endpoint string, body any, object any) ([]byte, error) {
 	var err error
 	var requestBytes, responseBytes []byte
@@ -46,7 +45,6 @@ func (c *Client) makeRequest(method string, endpoint string, body any, object an
 		}
 	}
 
-	// ignore unmarshal error, as DA's responses are inconsistent across endpoints
 	if resp.StatusCode/100 != 2 {
 		return nil, fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 	}
