@@ -38,7 +38,6 @@ type DVRCapture struct {
 	TitleID          int            `json:"titleId"`   // Game's ID
 	TitleName        string         `json:"titleName"` // Game's name
 	UploadDate       time.Time      `json:"uploadDate"`
-	UploadDateRaw    time.Time      `json:"dateUploaded"` // For screenshots
 	UploadLanguage   string         `json:"uploadLanguage"`
 	UploadRegion     string         `json:"uploadRegion"`
 	UploadTitleID    int            `json:"uploadTitleId"`
@@ -84,8 +83,8 @@ type Clip struct {
 	FrameRate         int `json:"frameRate"`         // Only exists for clips
 }
 
-func (c *Client) DeleteDVRClip(gameClipID string) error {
-	if _, err := c.makeRequest("GET", "dvr/gameclips/delete/"+gameClipID, nil, nil); err != nil {
+func (c *Client) DeleteDVRClip(id string) error {
+	if _, err := c.makeRequest("GET", "dvr/gameclips/delete/"+id, nil, nil); err != nil {
 		return err
 	}
 
@@ -95,7 +94,7 @@ func (c *Client) DeleteDVRClip(gameClipID string) error {
 func (c *Client) GetDVRClips(continuationToken string) ([]*Clip, string, error) {
 	response := struct {
 		ContinuationToken string  `json:"continuationToken"`
-		GameClips         []*Clip `json:"values"`
+		Clips             []*Clip `json:"values"`
 	}{}
 
 	// if a continuation token (their version of pagination) is supplied, pass it to the API
@@ -108,15 +107,15 @@ func (c *Client) GetDVRClips(continuationToken string) ([]*Clip, string, error) 
 		return nil, "", err
 	}
 
-	if len(response.GameClips) == 0 {
+	if len(response.Clips) == 0 {
 		return nil, "", errors.New("failed to find clips")
 	}
 
-	for index := range response.GameClips {
-		response.GameClips[index].Type = DVRCaptureTypeClip
+	for index := range response.Clips {
+		response.Clips[index].Type = DVRCaptureTypeClip
 	}
 
-	return response.GameClips, response.ContinuationToken, nil
+	return response.Clips, response.ContinuationToken, nil
 }
 
 type Screenshot struct {
@@ -125,8 +124,11 @@ type Screenshot struct {
 
 func (c *Client) GetDVRScreenshots(continuationToken string) ([]*Screenshot, string, error) {
 	response := struct {
-		ContinuationToken string        `json:"continuationToken"`
-		Screenshots       []*Screenshot `json:"values"`
+		ContinuationToken string `json:"continuationToken"`
+		Screenshots       []*struct {
+			DVRCapture
+			DateUploaded time.Time `json:"dateUploaded"`
+		} `json:"values"`
 	}{}
 
 	// if a continuation token (their version of pagination) is supplied, pass it to the API
@@ -143,12 +145,16 @@ func (c *Client) GetDVRScreenshots(continuationToken string) ([]*Screenshot, str
 		return nil, "", errors.New("failed to find screenshots")
 	}
 
+	screenshots := make([]*Screenshot, 0, len(response.Screenshots))
+
 	for index := range response.Screenshots {
-		response.Screenshots[index].Type = DVRCaptureTypeScreenshot
-		response.Screenshots[index].UploadDate = response.Screenshots[index].UploadDateRaw // workaround as the JSON tag is different for screenshots
+		screenshot := Screenshot{DVRCapture: response.Screenshots[index].DVRCapture}
+		screenshot.DVRCapture.Type = DVRCaptureTypeScreenshot
+		screenshot.UploadDate = response.Screenshots[index].DateUploaded
+		screenshots = append(screenshots, &screenshot)
 	}
 
-	return response.Screenshots, response.ContinuationToken, nil
+	return screenshots, response.ContinuationToken, nil
 }
 
 func (c *Client) SetDVRPrivacy(privacy DVRPrivacy) error {
