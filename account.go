@@ -56,7 +56,7 @@ func (c *Client) GetAccount() (*Account, error) {
 		case "Gamerscore":
 			gamerscore, err := strconv.Atoi(setting.Value)
 			if err != nil {
-				return nil, fmt.Errorf("failed to convert gamerscore to int: %v", err)
+				return nil, fmt.Errorf("failed to convert gamerscore to int: %w", err)
 			}
 
 			account.Gamerscore = gamerscore
@@ -74,7 +74,7 @@ func (c *Client) GetAccount() (*Account, error) {
 	return response.ProfileUsers[0], nil
 }
 
-// GenerateGamertags returns a list of generated gamertag options
+// GenerateGamertags returns a list of generated gamertag options.
 func (c *Client) GenerateGamertags(quantity int) ([]string, error) {
 	if quantity <= 0 {
 		return nil, errors.New("invalid quantity")
@@ -123,11 +123,10 @@ type Presence struct {
 	State string `json:"state"`
 }
 
-// GetPresenceForUser returns the current Presence for the given user ID
+// GetPresenceForUser returns the current Presence for the given user ID.
 func (c *Client) GetPresenceForUser(xboxIDs ...string) ([]*Presence, error) {
 	if len(xboxIDs) == 0 {
 		return nil, errors.New("missing xbox ID")
-
 	}
 
 	var response []*Presence

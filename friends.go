@@ -53,7 +53,7 @@ type Friend struct {
 	Avatar            interface{}   `json:"avatar"`
 }
 
-// GetFriends returns all friends
+// GetFriends returns all friends.
 func (c *Client) GetFriends() ([]*Friend, error) {
 	response := struct {
 		Friends []*Friend `json:"people"`
@@ -70,7 +70,7 @@ func (c *Client) GetFriends() ([]*Friend, error) {
 	return response.Friends, nil
 }
 
-// GetPresenceForFriends returns the current Presence for your friends
+// GetPresenceForFriends returns the current Presence for your friends.
 func (c *Client) GetPresenceForFriends() ([]*Presence, error) {
 	var response []*Presence
 

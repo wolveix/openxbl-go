@@ -27,7 +27,7 @@ func (c *Client) makeRequest(method string, endpoint string, body any, object an
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-authorization", c.apiKey)
+	req.Header.Set("X-Authorization", c.apiKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -49,7 +49,7 @@ func (c *Client) makeRequest(method string, endpoint string, body any, object an
 		return nil, fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 	}
 
-	// unmarshal to object if one is provided
+	// Unmarshal to object if one is provided.
 	if object != nil && len(responseBytes) > 0 {
 		if err = json.Unmarshal(responseBytes, &object); err != nil {
 			return nil, fmt.Errorf("error unmarshaling response: %w", err)
