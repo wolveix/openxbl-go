@@ -1,7 +1,9 @@
 package openxbl
 
 import (
+	"context"
 	"errors"
+	"net/http"
 	"time"
 )
 
@@ -54,32 +56,32 @@ type Friend struct {
 }
 
 // GetFriends returns all friends.
-func (c *Client) GetFriends() ([]*Friend, error) {
+func (c *Client) GetFriends(ctx context.Context) ([]*Friend, error) {
 	response := struct {
 		Friends []*Friend `json:"people"`
 	}{}
 
-	if _, err := c.makeRequest("GET", "friends", nil, &response); err != nil {
+	if _, err := c.makeRequest(ctx, http.MethodGet, "friends", nil, &response); err != nil {
 		return nil, err
 	}
 
 	if len(response.Friends) == 0 {
-		return nil, errors.New("failed to find friends")
+		return nil, errors.New("find friends")
 	}
 
 	return response.Friends, nil
 }
 
 // GetPresenceForFriends returns the current Presence for your friends.
-func (c *Client) GetPresenceForFriends() ([]*Presence, error) {
+func (c *Client) GetPresenceForFriends(ctx context.Context) ([]*Presence, error) {
 	var response []*Presence
 
-	if _, err := c.makeRequest("GET", "presence", nil, &response); err != nil {
+	if _, err := c.makeRequest(ctx, http.MethodGet, "presence", nil, &response); err != nil {
 		return nil, err
 	}
 
 	if len(response) == 0 {
-		return nil, errors.New("failed to find friend presences")
+		return nil, errors.New("find friend presences")
 	}
 
 	return response, nil

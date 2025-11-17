@@ -1,7 +1,9 @@
 package openxbl
 
 import (
+	"context"
 	"errors"
+	"net/http"
 	"time"
 )
 
@@ -68,6 +70,7 @@ func (d *DVRCapture) GetDownloadLink() string {
 
 type Clip struct {
 	DVRCapture
+
 	ContentSegments []struct {
 		ID                int         `json:"segmentId"`
 		CreationType      string      `json:"creationType"`
@@ -83,32 +86,32 @@ type Clip struct {
 	FrameRate         int `json:"frameRate"`         // Only exists for clips
 }
 
-func (c *Client) DeleteDVRClip(id string) error {
-	if _, err := c.makeRequest("GET", "dvr/gameclips/delete/"+id, nil, nil); err != nil {
+func (c *Client) DeleteDVRClip(ctx context.Context, id string) error {
+	if _, err := c.makeRequest(ctx, http.MethodGet, "dvr/gameclips/delete/"+id, nil, nil); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Client) GetDVRClips(continuationToken string) ([]*Clip, string, error) {
+func (c *Client) GetDVRClips(ctx context.Context, continuationToken string) ([]*Clip, string, error) {
 	response := struct {
 		ContinuationToken string  `json:"continuationToken"`
 		Clips             []*Clip `json:"values"`
 	}{}
 
-	// if a continuation token (their version of pagination) is supplied, pass it to the API
+	// If a continuation token (their version of pagination) is supplied, pass it to the API.
 	endpoint := "dvr/gameclips"
 	if continuationToken != "" {
 		endpoint += "?continuationToken=" + continuationToken
 	}
 
-	if _, err := c.makeRequest("GET", endpoint, nil, &response); err != nil {
+	if _, err := c.makeRequest(ctx, http.MethodGet, endpoint, nil, &response); err != nil {
 		return nil, "", err
 	}
 
 	if len(response.Clips) == 0 {
-		return nil, "", errors.New("failed to find clips")
+		return nil, "", errors.New("find clips")
 	}
 
 	for index := range response.Clips {
@@ -122,27 +125,28 @@ type Screenshot struct {
 	DVRCapture
 }
 
-func (c *Client) GetDVRScreenshots(continuationToken string) ([]*Screenshot, string, error) {
+func (c *Client) GetDVRScreenshots(ctx context.Context, continuationToken string) ([]*Screenshot, string, error) {
 	response := struct {
 		ContinuationToken string `json:"continuationToken"`
 		Screenshots       []*struct {
 			DVRCapture
+
 			DateUploaded time.Time `json:"dateUploaded"`
 		} `json:"values"`
 	}{}
 
-	// if a continuation token (their version of pagination) is supplied, pass it to the API
+	// If a continuation token (their version of pagination) is supplied, pass it to the API.
 	endpoint := "dvr/screenshots"
 	if continuationToken != "" {
 		endpoint += "?continuationToken=" + continuationToken
 	}
 
-	if _, err := c.makeRequest("GET", endpoint, nil, &response); err != nil {
+	if _, err := c.makeRequest(ctx, http.MethodGet, endpoint, nil, &response); err != nil {
 		return nil, "", err
 	}
 
 	if len(response.Screenshots) == 0 {
-		return nil, "", errors.New("failed to find screenshots")
+		return nil, "", errors.New("find screenshots")
 	}
 
 	screenshots := make([]*Screenshot, 0, len(response.Screenshots))
@@ -157,7 +161,7 @@ func (c *Client) GetDVRScreenshots(continuationToken string) ([]*Screenshot, str
 	return screenshots, response.ContinuationToken, nil
 }
 
-func (c *Client) SetDVRPrivacy(privacy DVRPrivacy) error {
+func (c *Client) SetDVRPrivacy(ctx context.Context, privacy DVRPrivacy) error {
 	switch privacy {
 	case DVRPrivacyBlocked, DVRPrivacyEveryone, DVRPrivacyPeopleOnMyList:
 	default:
@@ -170,7 +174,7 @@ func (c *Client) SetDVRPrivacy(privacy DVRPrivacy) error {
 		Privacy: string(privacy),
 	}
 
-	if _, err := c.makeRequest("POST", "dvr/privacy", request, nil); err != nil {
+	if _, err := c.makeRequest(ctx, http.MethodPost, "dvr/privacy", request, nil); err != nil {
 		return err
 	}
 

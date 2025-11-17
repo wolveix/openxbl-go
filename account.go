@@ -1,8 +1,10 @@
 package openxbl
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -30,17 +32,17 @@ type Account struct {
 	} `json:"settings"`
 }
 
-func (c *Client) GetAccount() (*Account, error) {
+func (c *Client) GetAccount(ctx context.Context) (*Account, error) {
 	response := struct {
 		ProfileUsers []*Account `json:"profileUsers"`
 	}{}
 
-	if _, err := c.makeRequest("GET", "account", nil, &response); err != nil {
+	if _, err := c.makeRequest(ctx, http.MethodGet, "account", nil, &response); err != nil {
 		return nil, err
 	}
 
 	if len(response.ProfileUsers) == 0 {
-		return nil, errors.New("failed to find account info")
+		return nil, errors.New("find account info")
 	}
 
 	account := response.ProfileUsers[0]
@@ -56,7 +58,7 @@ func (c *Client) GetAccount() (*Account, error) {
 		case "Gamerscore":
 			gamerscore, err := strconv.Atoi(setting.Value)
 			if err != nil {
-				return nil, fmt.Errorf("failed to convert gamerscore to int: %w", err)
+				return nil, fmt.Errorf("convert gamerscore to int: %w", err)
 			}
 
 			account.Gamerscore = gamerscore
@@ -75,7 +77,7 @@ func (c *Client) GetAccount() (*Account, error) {
 }
 
 // GenerateGamertags returns a list of generated gamertag options.
-func (c *Client) GenerateGamertags(quantity int) ([]string, error) {
+func (c *Client) GenerateGamertags(ctx context.Context, quantity int) ([]string, error) {
 	if quantity <= 0 {
 		return nil, errors.New("invalid quantity")
 	}
@@ -91,12 +93,12 @@ func (c *Client) GenerateGamertags(quantity int) ([]string, error) {
 		Gamertags []string `json:"Gamertags"`
 	}{}
 
-	if _, err := c.makeRequest("POST", "generate/gamertag", request, &response); err != nil {
+	if _, err := c.makeRequest(ctx, http.MethodPost, "generate/gamertag", request, &response); err != nil {
 		return nil, err
 	}
 
 	if len(response.Gamertags) == 0 {
-		return nil, errors.New("failed to generate gamertags")
+		return nil, errors.New("no gamertags generated")
 	}
 
 	return response.Gamertags, nil
@@ -124,19 +126,19 @@ type Presence struct {
 }
 
 // GetPresenceForUser returns the current Presence for the given user ID.
-func (c *Client) GetPresenceForUser(xboxIDs ...string) ([]*Presence, error) {
+func (c *Client) GetPresenceForUser(ctx context.Context, xboxIDs ...string) ([]*Presence, error) {
 	if len(xboxIDs) == 0 {
 		return nil, errors.New("missing xbox ID")
 	}
 
 	var response []*Presence
 
-	if _, err := c.makeRequest("GET", strings.Join(xboxIDs, ",")+"/presence", nil, &response); err != nil {
+	if _, err := c.makeRequest(ctx, http.MethodGet, strings.Join(xboxIDs, ",")+"/presence", nil, &response); err != nil {
 		return nil, err
 	}
 
 	if len(response) == 0 {
-		return nil, errors.New("failed to find user presences")
+		return nil, errors.New("find user presences")
 	}
 
 	return response, nil
